@@ -182,13 +182,14 @@ def aggregate_plant_data(fetched_data: dict | None) -> dict:
             _LOGGER.error("Aggregator: Error processing data for device %s: %s", device_alias, e, exc_info=True)
             continue
 
+    # Converte potência total do plant e dos painéis para kW
     aggregated_data = {
-        "Power": round(plant_sum_power, 2),
+        "Power": round(plant_sum_power / 1000, 3),        # kW
         "Energy_Today": round(plant_sum_energy_today, 2),
         "Energy_This_Month": round(plant_sum_energy_month, 2),
         "Energy_This_Year": round(plant_sum_energy_year, 2),
         "Energy_Total": round(plant_sum_energy_total, 2),
-        "Panel_Power": round(plant_sum_panel_power, 2), # Total power from all panels
+        "Panel_Power": round(plant_sum_panel_power / 1000, 3),  # kW (opcional, mas fica consistente)
         "Update_time": latest_update_time_str,
         "Server_Time": latest_server_time_str,
     }
@@ -197,7 +198,7 @@ def aggregate_plant_data(fetched_data: dict | None) -> dict:
 
 
 def calculate_peak_power(current_power: float | None, previous_peak: float, last_reset_date: date | None) -> tuple[float, date, bool]:
-    """Calculates the new peak power, handling daily reset."""
+        """Calculates the new peak power in kW, handling daily reset."""
     now = datetime.now()
     current_date = now.date()
     state_changed = False
