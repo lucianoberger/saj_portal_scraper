@@ -1,6 +1,7 @@
 # /workspaces/addons/saj_portal_scraper/utils.py
-import logging
+
 from datetime import datetime, time, date
+import re
 
 from const import (
     CONF_INACTIVITY_ENABLED,
@@ -12,6 +13,41 @@ from const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# --- Helper: soma múltiplos números dentro de uma string ---
+def sum_numbers_from_string(s):
+    """
+    Recebe strings como:
+      "22865\n22603\n22200"   -> soma linhas -> 67668.0
+      "3.86-0.20-0.00-0.00"   -> soma extraindo números -> 3.66
+      "9173 9064 8939"       -> soma -> 27176.0
+      "3.563,06"             -> trata vírgula decimal -> 3563.06
+    Retorna float (0.0 quando não encontrar números válidos).
+    """
+    if s is None:
+        return 0.0
+    s = str(s).strip()
+    if s == "":
+        return 0.0
+
+    # normalizar non-break-space e vírgula decimal
+    s = s.replace('\u00A0', ' ').replace(',', '.')
+
+    # split em linhas (se houver) e considerar cada linha separadamente
+    lines = [ln.strip() for ln in re.split(r'[\r\n]+', s) if ln.strip() != ""]
+
+    total = 0.0
+    for ln in lines:
+        # extrai todos os números na linha (inteiro ou com ponto decimal)
+        parts = re.findall(r'[-+]?\d+(?:\.\d+)?', ln)
+        for p in parts:
+            try:
+                total += float(p)
+            except Exception:
+                # ignora partes mal formadas
+                continue
+
+    return total
 
 
 def is_inactive(config: dict) -> bool:
@@ -93,8 +129,8 @@ def aggregate_plant_data(fetched_data: dict | None) -> dict:
                     ] or attribute.endswith("_Panel_Power") # Also sum individual panel powers
 
                     if is_summable_numeric and value_str is not None:
-                        # Attempt conversion to float, handling commas
-                        value_float = float(str(value_str).replace(',', '.'))
+                        # Use the robust summing helper to handle multiline or multiple numbers in a string
+                        value_float = sum_numbers_from_string(value_str)
 
                         if attribute == "Power":
                             plant_sum_power += value_float
@@ -182,3 +218,4 @@ def calculate_peak_power(current_power: float | None, previous_peak: float, last
         state_changed = True
 
     return new_peak, new_reset_date, state_changed
+
