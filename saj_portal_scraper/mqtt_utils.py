@@ -228,6 +228,9 @@ def publish_discovery(client: mqtt.Client, device_data: dict, plant_data: dict, 
         # Skip non-sensor attributes, except timestamps
         if unit is None and device_class is None and attribute not in ["Update_time", "Server_Time"]: continue
         if attribute in ["Update_time", "Server_Time"]: device_class = "timestamp"
+        # Força unidade em kW para os atributos agregados de potência
+        if attribute in ["Power", "Panel_Power"]:
+            unit = "kW"
 
         discovery_topic = f"{MQTT_DISCOVERY_PREFIX}/sensor/{unique_id}/config"
         payload = {
