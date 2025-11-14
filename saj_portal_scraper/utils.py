@@ -1,4 +1,5 @@
 # /workspaces/addons/saj_portal_scraper/utils.py
+import logging
 
 from datetime import datetime, time, date
 import re
